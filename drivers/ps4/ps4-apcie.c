@@ -330,6 +330,13 @@ int apcie_assign_irqs(struct pci_dev *dev, int nvec)
 	struct msi_desc *desc;
 	struct device* bare_dev = &sc->pdev->dev;
 
+	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
+	if (!desc)
+    	return -ENOMEM;
+
+	desc->nvec_used = nvec;
+	desc->dev = bare_dev;
+
 	/* Our hwirq number is function << 8 plus subfunction.
 	 * Subfunction is usually 0 and implicitly increments per hwirq,
 	 * but can also be 0xff to indicate that this is a shared IRQ. */
@@ -342,8 +349,6 @@ int apcie_assign_irqs(struct pci_dev *dev, int nvec)
 		info.hwirq |= 0xff; /* Shared IRQ for all subfunctions */
 	}
 #endif
-
-	desc = alloc_msi_entry(bare_dev, nvec, NULL);
 
 	info.desc = desc;
 	info.data = sc;
