@@ -11,17 +11,26 @@
  * GNU General Public License for more details.
  */
 
+
+// TODO (ps4patches): Make functions atomic,
+//  https://lore.kernel.org/linux-arm-kernel/20211020181901.2114645-5-sam@ravnborg.org/
+
 #include <asm/ps4.h>
 
-#include <drm/drm_bridge.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_edid.h>
-#include <drm/drm_print.h>
 
 #include <linux/pci.h>
+#include <drm/drm_bridge.h>
+#include <drm/drm_encoder.h>
 
+#include <linux/i2c.h>
+#include <linux/i2c-algo-bit.h>
+
+
+#include "radeon.h"
 #include "radeon_mode.h"
 #include "ObjectID.h"
 
@@ -33,51 +42,51 @@
 #define CMD_WAIT_CLEAR	3, 3
 
 #define TSYSCTRL 0x7005
-# define TSYSCTRL_HDMI BIT(7)
+#define TSYSCTRL_HDMI BIT(7)
 
 #define TSRST 0x7006
-# define TSRST_AVCSRST BIT(0)
-# define TSRST_ENCSRST BIT(1)
-# define TSRST_FIFOSRST BIT(2)
-# define TSRST_CCSRST BIT(3)
-# define TSRST_HDCPSRST BIT(4)
-# define TSRST_AUDSRST BIT(6)
-# define TSRST_VIFSRST BIT(7)
+#define TSRST_AVCSRST BIT(0)
+#define TSRST_ENCSRST BIT(1)
+#define TSRST_FIFOSRST BIT(2)
+#define TSRST_CCSRST BIT(3)
+#define TSRST_HDCPSRST BIT(4)
+#define TSRST_AUDSRST BIT(6)
+#define TSRST_VIFSRST BIT(7)
 
 #define TMONREG 0x7008
-# define TMONREG_HPD BIT(3)
+#define TMONREG_HPD BIT(3)
 
 #define TDPCMODE 0x7009
 
 
 #define UPDCTRL 0x7011
-# define UPDCTRL_ALLUPD BIT(7)
-# define UPDCTRL_AVIIUPD BIT(6)
-# define UPDCTRL_AUDIUPD BIT(5)
-# define UPDCTRL_CLKUPD BIT(4)
-# define UPDCTRL_HVSIUPD BIT(3)
-# define UPDCTRL_VIFUPD BIT(2)
-# define UPDCTRL_AUDUPD BIT(1)
-# define UPDCTRL_CSCUPD BIT(0)
+#define UPDCTRL_ALLUPD BIT(7)
+#define UPDCTRL_AVIIUPD BIT(6)
+#define UPDCTRL_AUDIUPD BIT(5)
+#define UPDCTRL_CLKUPD BIT(4)
+#define UPDCTRL_HVSIUPD BIT(3)
+#define UPDCTRL_VIFUPD BIT(2)
+#define UPDCTRL_AUDUPD BIT(1)
+#define UPDCTRL_CSCUPD BIT(0)
 
 
 #define VINCNT 0x7040
-# define VINCNT_VIF_FILEN BIT(6)
+#define VINCNT_VIF_FILEN BIT(6)
 
 #define VMUTECNT 0x705f
-# define VMUTECNT_CCVMUTE BIT(7)
-# define VMUTECNT_DUMON BIT(6)
-# define VMUTECNT_LINEWIDTH_80 (0<<4)
-# define VMUTECNT_LINEWIDTH_90 (1<<4)
-# define VMUTECNT_LINEWIDTH_180 (2<<4)
-# define VMUTECNT_LINEWIDTH_360 (3<<4)
-# define VMUTECNT_VMUTE_MUTE_ASYNC 1
-# define VMUTECNT_VMUTE_MUTE_NORMAL 2
-# define VMUTECNT_VMUTE_MUTE_RAMPA 4
-# define VMUTECNT_VMUTE_MUTE_RAMPB 8
-# define VMUTECNT_VMUTE_MUTE_COLORBAR_RGB 10
-# define VMUTECNT_VMUTE_MUTE_TOGGLE 12
-# define VMUTECNT_VMUTE_MUTE_COLORBAR_YCBCR 14
+#define VMUTECNT_CCVMUTE BIT(7)
+#define VMUTECNT_DUMON BIT(6)
+#define VMUTECNT_LINEWIDTH_80 (0<<4)
+#define VMUTECNT_LINEWIDTH_90 (1<<4)
+#define VMUTECNT_LINEWIDTH_180 (2<<4)
+#define VMUTECNT_LINEWIDTH_360 (3<<4)
+#define VMUTECNT_VMUTE_MUTE_ASYNC 1
+#define VMUTECNT_VMUTE_MUTE_NORMAL 2
+#define VMUTECNT_VMUTE_MUTE_RAMPA 4
+#define VMUTECNT_VMUTE_MUTE_RAMPB 8
+#define VMUTECNT_VMUTE_MUTE_COLORBAR_RGB 10
+#define VMUTECNT_VMUTE_MUTE_TOGGLE 12
+#define VMUTECNT_VMUTE_MUTE_COLORBAR_YCBCR 14
 
 #define CSCMOD 0x70c0
 #define C420SET 0x70c2
@@ -86,22 +95,25 @@
 #define PKTENA 0x7202
 
 #define INFENA 0x7203
-# define INFENA_AVIEN BIT(6)
+#define INFENA_AVIEN BIT(6)
 
 #define AKESTA 0x7a84
-# define AKESTA_BUSY BIT(0)
+#define AKESTA_BUSY BIT(0)
 
 #define AKESRST 0x7a88
 
 #define HDCPEN 0x7a8b
-# define HDCPEN_NONE 0x00
-# define HDCPEN_ENC_EN 0x03
-# define HDCPEN_ENC_DIS 0x05
+#define HDCPEN_NONE 0x00
+#define HDCPEN_ENC_EN 0x03
+#define HDCPEN_ENC_DIS 0x05
 
 #define PCI_DEVICE_ID_CUH_11XX 0x9920
 #define PCI_DEVICE_ID_CUH_12XX 0x9922
 #define PCI_DEVICE_ID_CUH_2XXX 0x9923
 #define PCI_DEVICE_ID_CUH_7XXX 0x9924
+
+struct edid *drm_get_edid(struct drm_connector *connector,
+ 				 struct i2c_adapter *adapter);
 
 struct i2c_cmd_hdr {
 	u8 major;
@@ -235,7 +247,7 @@ static void cq_mask(struct i2c_cmdqueue *q, u16 addr, u8 value, u8 mask)
 	*q->p++ = mask;
 }
 
-#if 0
+#if 1
 static void cq_delay(struct i2c_cmdqueue *q, u16 time)
 {
 	cq_cmd(q, CMD_DELAY);
@@ -289,7 +301,7 @@ static void radeon_ps4_bridge_pre_enable(struct drm_bridge *bridge)
 {
 	struct radeon_ps4_bridge *mn_bridge = bridge_to_radeon_ps4_bridge(bridge);
 	DRM_DEBUG_KMS("radeon_ps4_bridge_pre_enable\n");
-
+	DRM_DEBUG("Enable radeon_ps4_bridge_pre_enable\n");
 	mutex_lock(&mn_bridge->mutex);
 	cq_init(&mn_bridge->cq, 4);
 
@@ -510,8 +522,10 @@ static void radeon_ps4_bridge_enable(struct drm_bridge *bridge)
 
 		cq_mask(&mn_bridge->cq, 0x1e00, 0x00, 0x21);
 		cq_mask(&mn_bridge->cq, 0x1e02, 0x00, 0x70);
-
+		// 03 08 01 01 00  2c 01 00
+		cq_delay(&mn_bridge->cq, 0x012c);
 		cq_writereg(&mn_bridge->cq, 0x6020, 0x00);
+		cq_delay(&mn_bridge->cq, 0x0032);
 		cq_writereg(&mn_bridge->cq, 0x7402, 0x1c);
 		cq_writereg(&mn_bridge->cq, 0x6020, 0x04);
 		cq_writereg(&mn_bridge->cq, TSYSCTRL, TSYSCTRL_HDMI);
@@ -554,6 +568,7 @@ static void radeon_ps4_bridge_enable(struct drm_bridge *bridge)
 		cq_wait_set(&mn_bridge->cq, 0x10f6, 0x80);
 		cq_mask(&mn_bridge->cq, 0x7226, 0x00, 0x80);
 		cq_mask(&mn_bridge->cq, 0x7228, 0x00, 0xFF);
+		cq_delay(&mn_bridge->cq, 0x012c);
 		cq_writereg(&mn_bridge->cq, 0x7204, 0x40);
 		cq_wait_clear(&mn_bridge->cq, 0x7204, 0x40);
 		cq_writereg(&mn_bridge->cq, 0x7a8b, 0x05);
@@ -661,7 +676,7 @@ int radeon_ps4_bridge_get_modes(struct drm_connector *connector)
 {
 	struct drm_device *dev = connector->dev;
 	struct drm_display_mode *newmode;
-	DRM_DEBUG_KMS("radeon_ps4_bridge_get_modes\n");
+	pr_info("radeon_ps4_bridge_get_modes\n");
 
 	newmode = drm_mode_duplicate(dev, &mode_1080p);
 	drm_mode_probed_add(connector, newmode);
@@ -746,16 +761,17 @@ int radeon_ps4_bridge_register(struct drm_connector *connector,
 
 	mn_bridge->encoder = encoder;
 	mn_bridge->connector = connector;
+	mn_bridge->bridge.type = DRM_MODE_CONNECTOR_HDMIA;
 	mn_bridge->bridge.funcs = &radeon_ps4_bridge_funcs;
-	ret = drm_bridge_attach(mn_bridge->encoder, &mn_bridge->bridge, NULL, 0);
+
+	// TODO (ps4patches): This seems to be the new way of adding bridges
+	drm_bridge_add(&mn_bridge->bridge);
+
+	ret = drm_bridge_attach(mn_bridge->encoder, &mn_bridge->bridge, NULL, DRM_BRIDGE_ATTACH_NO_CONNECTOR);
 	if (ret) {
 		DRM_ERROR("Failed to initialize bridge with drm\n");
 		return -EINVAL;
 	}
-
-	//encoder->bridge = &mn_bridge->bridge;
-	// TODO (ps4patches): This seems to be the new way of adding bridges
-	drm_bridge_add(&mn_bridge->bridge);
 
 	return 0;
 }
