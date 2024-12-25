@@ -282,7 +282,7 @@ static inline struct radeon_ps4_bridge *
 	return container_of(bridge, struct radeon_ps4_bridge, bridge);
 }
 
-static void radeon_ps4_bridge_mode_set(struct drm_bridge *bridge,
+void radeon_ps4_bridge_mode_set(struct drm_bridge *bridge,
 			      const struct drm_display_mode *mode,
 			      const struct drm_display_mode *adjusted_mode)
 {
@@ -294,6 +294,7 @@ static void radeon_ps4_bridge_mode_set(struct drm_bridge *bridge,
 	DRM_DEBUG_KMS("vic mode: %d\n", mn_bridge->mode);
 	if (!mn_bridge->mode) {
 		DRM_ERROR("attempted to set non-CEA mode\n");
+		DRM_ERROR("vic mode: %d\n", mn_bridge->mode);
 	}
 }
 
@@ -379,7 +380,7 @@ static void radeon_ps4_bridge_enable(struct drm_bridge *bridge)
 		return;
 	}
 
-	if(pdev->vendor != PCI_VENDOR_ID_AMD) {
+	if(pdev->vendor != PCI_VENDOR_ID_ATI) {
 		DRM_ERROR("Invalid vendor: %04x", pdev->vendor);
 		return;
 	}
