@@ -527,7 +527,8 @@ static void deallocate_vmid(struct device_queue_manager *dqm,
 				struct queue *q)
 {
 	/* On GFX v7, CP doesn't flush TC at dequeue */
-	if (q->device->adev->asic_type == CHIP_HAWAII)
+	if ((q->device->adev->asic_type == CHIP_HAWAII) ||
+		(q->device->adev->asic_type == CHIP_LIVERPOOL))
 		if (flush_texture_cache_nocpsch(q->device, qpd))
 			pr_err("Failed to flush TC\n");
 
@@ -2506,6 +2507,8 @@ struct device_queue_manager *device_queue_manager_init(struct kfd_node *dev)
 
 	switch (dev->adev->asic_type) {
 	/* HWS is not available on Hawaii. */
+	case CHIP_LIVERPOOL:
+	case CHIP_GLADIUS:
 	case CHIP_HAWAII:
 	/* HWS depends on CWSR for timely dequeue. CWSR is not
 	 * available on Tonga.
@@ -2575,6 +2578,8 @@ struct device_queue_manager *device_queue_manager_init(struct kfd_node *dev)
 	switch (dev->adev->asic_type) {
 	case CHIP_KAVERI:
 	case CHIP_HAWAII:
+	case CHIP_LIVERPOOL:
+	case CHIP_GLADIUS:
 		device_queue_manager_init_cik(&dqm->asic_ops);
 		break;
 
