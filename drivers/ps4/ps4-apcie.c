@@ -343,7 +343,6 @@ int apcie_assign_irqs(struct pci_dev *dev, int nvec)
 	info.hwirq = PCI_FUNC(dev->devfn) << 8;
 
 #ifndef QEMU_HACK_NO_IOMMU
-	info.flags = X86_IRQ_ALLOC_CONTIGUOUS_VECTORS;
 	if (!(apcie_msi_domain_info.flags & MSI_FLAG_MULTI_PCI_MSI)) {
 		nvec = 1;
 		info.hwirq |= 0xff; /* Shared IRQ for all subfunctions */
