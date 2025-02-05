@@ -99,6 +99,8 @@ const char *amdgpu_asic_name[] = {
 	"KAVERI",
 	"KABINI",
 	"HAWAII",
+	"LIVERPOOL",
+	"GLADIUS",
 	"MULLINS",
 	"TOPAZ",
 	"TONGA",
@@ -1915,6 +1917,8 @@ static int amdgpu_device_parse_gpu_info_fw(struct amdgpu_device *adev)
 #ifdef CONFIG_DRM_AMDGPU_CIK
 	case CHIP_BONAIRE:
 	case CHIP_HAWAII:
+	case CHIP_GLADIUS:
+	case CHIP_LIVERPOOL:
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
@@ -2102,6 +2106,8 @@ static int amdgpu_device_ip_early_init(struct amdgpu_device *adev)
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
+	case CHIP_LIVERPOOL:
+	case CHIP_GLADIUS:
 		if (adev->flags & AMD_IS_APU)
 			adev->family = AMDGPU_FAMILY_KV;
 		else

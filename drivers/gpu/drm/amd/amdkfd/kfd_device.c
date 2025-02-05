@@ -136,6 +136,47 @@ static const struct kfd_device_info hawaii_device_info = {
 };
 #endif
 
+// TODO (ps4patches): asic_name was hawaii in original patches, check if liverpool as name is ok
+static const struct kfd_device_info liverpool_device_info = {
+	.asic_family = CHIP_LIVERPOOL,
+	.asic_name = "liverpool",
+	.gfx_target_version = 70001,
+	.max_pasid_bits = 16,
+	/* max num of queues for KV.TODO should be a dynamic value */
+	.max_no_of_hqd	= 24,
+	.doorbell_size  = 4,
+	.ih_ring_entry_size = 4 * sizeof(uint32_t),
+	.event_interrupt_class = &event_interrupt_class_cik,
+	.num_of_watch_points = 4,
+	.mqd_size_aligned = MQD_SIZE_ALIGNED,
+	.supports_cwsr = false,
+	.needs_iommu_device = true,
+	.needs_pci_atomics = false,
+	.num_sdma_engines = 2,
+	.num_xgmi_sdma_engines = 0,
+	.num_sdma_queues_per_engine = 2,
+};
+
+static const struct kfd_device_info gladius_device_info = {
+	.asic_family = CHIP_GLADIUS,
+	.asic_name = "gladius",
+	.gfx_target_version = 70001,
+	.max_pasid_bits = 16,
+	/* max num of queues for KV.TODO should be a dynamic value */
+	.max_no_of_hqd	= 24,
+	.doorbell_size  = 4,
+	.ih_ring_entry_size = 4 * sizeof(uint32_t),
+	.event_interrupt_class = &event_interrupt_class_cik,
+	.num_of_watch_points = 4,
+	.mqd_size_aligned = MQD_SIZE_ALIGNED,
+	.supports_cwsr = false,
+	.needs_iommu_device = true,
+	.needs_pci_atomics = false,
+	.num_sdma_engines = 2,
+	.num_xgmi_sdma_engines = 0,
+	.num_sdma_queues_per_engine = 2,
+};
+
 static const struct kfd_device_info tonga_device_info = {
 	.asic_family = CHIP_TONGA,
 	.asic_name = "tonga",
@@ -663,6 +704,20 @@ struct kfd_dev *kgd2kfd_probe(struct kgd_dev *kgd, bool vf)
 		f2g = &gfx_v7_kfd2kgd;
 		break;
 #endif
+	case CHIP_LIVERPOOL:
+		if (vf)
+			device_info = NULL;
+		else
+			device_info = &liverpool_device_info;
+		f2g = &gfx_v7_kfd2kgd;
+		break;
+	case CHIP_GLADIUS:
+		if (vf)
+			device_info = NULL;
+		else
+			device_info = &gladius_device_info;
+		f2g = &gfx_v7_kfd2kgd;
+		break;
 	case CHIP_TONGA:
 		if (vf)
 			device_info = NULL;
