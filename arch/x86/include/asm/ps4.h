@@ -36,6 +36,9 @@ extern int apcie_status(void);
 extern int apcie_icc_cmd(u8 major, u16 minor, const void *data,
 			 u16 length, void *reply, u16 reply_length);
 
+extern void icc_reboot(void);
+extern void icc_crash_reboot(struct pt_regs *regs); 
+
 
 #else
 

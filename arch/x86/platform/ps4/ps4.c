@@ -56,8 +56,6 @@ int apcie_status(void)
 }
 EXPORT_SYMBOL_GPL(apcie_status);
 
-void icc_reboot(void);
-
 /*
  * PS4 specific x86_init function overrides and early setup calls.
  */
@@ -71,4 +69,5 @@ void __init x86_ps4_early_setup(void)
 
 	legacy_pic = &null_legacy_pic;
 	machine_ops.emergency_restart = icc_reboot;
+	machine_ops.crash_shutdown = icc_crash_reboot;
 }

@@ -9,6 +9,7 @@
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 #include <asm/ps4.h>
+#include <asm/reboot.h>
 #include "aeolia.h"
 
 /* There should normally be only one Aeolia device in a system. This allows
@@ -409,6 +410,12 @@ void icc_reboot(void)
 	apcie_icc_cmd(4, 1, command, sizeof(command), NULL, 0);
 	mdelay(3000);
 	WARN_ON(1);
+}
+
+void icc_crash_reboot(struct pt_regs *regs) 
+{
+	icc_shutdown();
+	native_machine_crash_shutdown(regs);	
 }
 
 static void *ioctl_tmp_buf = NULL;
