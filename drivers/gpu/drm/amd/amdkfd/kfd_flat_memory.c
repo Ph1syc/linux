@@ -397,6 +397,7 @@ int kfd_init_apertures(struct kfd_process *process)
 			switch (dev->adev->asic_type) {
 			case CHIP_KAVERI:
 			case CHIP_HAWAII:
+			case CHIP_LIVERPOOL:
 			case CHIP_CARRIZO:
 			case CHIP_TONGA:
 			case CHIP_FIJI:

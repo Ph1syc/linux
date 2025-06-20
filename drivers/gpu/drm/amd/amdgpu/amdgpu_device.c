@@ -117,6 +117,7 @@ const char *amdgpu_asic_name[] = {
 	"KAVERI",
 	"KABINI",
 	"HAWAII",
+	"LIVERPOOL",
 	"MULLINS",
 	"TOPAZ",
 	"TONGA",
@@ -2654,6 +2655,7 @@ static int amdgpu_device_ip_early_init(struct amdgpu_device *adev)
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
+	case CHIP_LIVERPOOL:
 		if (adev->flags & AMD_IS_APU)
 			adev->family = AMDGPU_FAMILY_KV;
 		else
@@ -4011,6 +4013,7 @@ bool amdgpu_device_asic_has_dc_support(enum amd_asic_type asic_type)
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
+	case CHIP_LIVERPOOL:
 		/*
 		 * We have systems in the wild with these ASICs that require
 		 * VGA support which is not supported with DC.
@@ -7063,6 +7066,7 @@ bool amdgpu_device_has_display_hardware(struct amdgpu_device *adev)
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
+	case CHIP_LIVERPOOL:
 #endif
 	case CHIP_TONGA:
 	case CHIP_FIJI:

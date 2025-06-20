@@ -38,6 +38,7 @@ enum amd_asic_type {
 	CHIP_KAVERI,	/* 6 */
 	CHIP_KABINI,	/* 7 */
 	CHIP_HAWAII,	/* 8 */
+	CHIP_LIVERPOOL,	
 	CHIP_MULLINS,	/* 9 */
 	CHIP_TOPAZ,	/* 10 */
 	CHIP_TONGA,	/* 11 */

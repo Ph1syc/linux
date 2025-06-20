@@ -420,6 +420,7 @@ static int dce_v8_0_get_num_crtc(struct amdgpu_device *adev)
 	switch (adev->asic_type) {
 	case CHIP_BONAIRE:
 	case CHIP_HAWAII:
+	case CHIP_LIVERPOOL:
 		num_crtc = 6;
 		break;
 	case CHIP_KAVERI:
@@ -2653,8 +2654,14 @@ static int dce_v8_0_crtc_init(struct amdgpu_device *adev, int index)
 	amdgpu_crtc->crtc_id = index;
 	adev->mode_info.crtcs[index] = amdgpu_crtc;
 
-	amdgpu_crtc->max_cursor_width = CIK_CURSOR_WIDTH;
-	amdgpu_crtc->max_cursor_height = CIK_CURSOR_HEIGHT;
+	if (adev->asic_type == CHIP_LIVERPOOL) {
+		amdgpu_crtc->max_cursor_width = LVP_CURSOR_WIDTH;
+		amdgpu_crtc->max_cursor_height = LVP_CURSOR_HEIGHT;
+	}
+	else {
+		amdgpu_crtc->max_cursor_width = CIK_CURSOR_WIDTH;
+		amdgpu_crtc->max_cursor_height = CIK_CURSOR_HEIGHT;
+	}
 	adev_to_drm(adev)->mode_config.cursor_width = amdgpu_crtc->max_cursor_width;
 	adev_to_drm(adev)->mode_config.cursor_height = amdgpu_crtc->max_cursor_height;
 
@@ -2688,6 +2695,7 @@ static int dce_v8_0_early_init(struct amdgpu_ip_block *ip_block)
 		adev->mode_info.num_dig = 6;
 		break;
 	case CHIP_KAVERI:
+	case CHIP_LIVERPOOL:
 		adev->mode_info.num_hpd = 6;
 		adev->mode_info.num_dig = 7;
 		break;

@@ -66,6 +66,8 @@ MODULE_FIRMWARE("amdgpu/kabini_sdma.bin");
 MODULE_FIRMWARE("amdgpu/kabini_sdma1.bin");
 MODULE_FIRMWARE("amdgpu/mullins_sdma.bin");
 MODULE_FIRMWARE("amdgpu/mullins_sdma1.bin");
+MODULE_FIRMWARE("amdgpu/liverpool_sdma.bin");
+MODULE_FIRMWARE("amdgpu/liverpool_sdma1.bin");
 
 u32 amdgpu_cik_gpu_check_soft_reset(struct amdgpu_device *adev);
 
@@ -126,6 +128,9 @@ static int cik_sdma_init_microcode(struct amdgpu_device *adev)
 		break;
 	case CHIP_MULLINS:
 		chip_name = "mullins";
+		break;
+	case CHIP_LIVERPOOL:
+		chip_name = "liverpool";
 		break;
 	default: BUG();
 	}

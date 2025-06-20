@@ -136,6 +136,7 @@ static int cik_query_video_codecs(struct amdgpu_device *adev, bool encode,
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
+	case CHIP_LIVERPOOL:
 		if (encode)
 			*codecs = &cik_video_codecs_encode;
 		else
@@ -788,6 +789,147 @@ static const u32 hawaii_mgcg_cgcg_init[] =
 	0x3603, 0xff000ff0, 0x00000100
 };
 
+static const u32 liverpool_golden_spm_registers[] =
+{
+	0xc200, 0xe0ffffff, 0xe0000000
+};
+
+static const u32 liverpool_golden_common_registers[] =
+{
+	0xc200, 0xffffffff, 0xe0000000,
+	0xa0d4, 0xffffffff, 0x2a00161a,
+	0xa0d5, 0xffffffff, 0x00000000,
+	0x2684, 0xffffffff, 0x00018208,
+	0x263e, 0xffffffff, 0x12011003
+};
+
+static const u32 liverpool_golden_registers[] =
+{
+	0xf000, 0xffff1fff, 0x96940200,
+	0xf003, 0xffff0001, 0xff000000,
+	0xf004, 0xffff0000, 0xff000000,
+	0xf080, 0xfdfc0fff, 0x00000100,
+	0x1bb6, 0x00010000, 0x00010000,
+	0x2684, 0x00210000, 0x00018208,
+	0x260d, 0xf00fffff, 0x00004400,
+	0x16ec, 0x000000f0, 0x00000070,
+	0x263e, 0x73773777, 0x12011003,
+	0xbd2, 0x73773777, 0x12010001,
+	0x2285, 0xf000003f, 0x00000007,
+	0x22fc, 0x00000001, 0x00000001,
+	0x22c9, 0xffffffff, 0x00ffffff,
+	0xc281, 0x0000ff0f, 0x00000000,
+	0xa293, 0x07ffffff, 0x06000000,
+	0x136, 0x00000fff, 0x00000100,
+	0xf9e, 0x00000001, 0x00000002,
+	0x31da, 0x00000008, 0x00000008,
+	0x31dc, 0xffffffff, 0x00000800,
+	0x31dd, 0xffffffff, 0x00000800,
+	0x31e6, 0xffffffff, 0x00ffffbf,
+	0x31e7, 0xffffffff, 0x00ffffaf,
+	0x31e8, 0xffffffff, 0x00fffffe,
+	0x31e9, 0xffffffff, 0x00fffffe,
+	0x31ea, 0xffffffff, 0x00fffffe,
+	0x31eb, 0xffffffff, 0x00fffffe,
+	0x31ec, 0xffffffff, 0x00fffffe,
+	0x31ed, 0xffffffff, 0x00fffffe,
+	0x31ee, 0xffffffff, 0x00fffffe,
+	0x31ef, 0xffffffff, 0x00fffffe,
+	0x2300, 0x000000ff, 0x00000001,
+	0x2542, 0x00010000, 0x00010000,
+	0x2b03, 0xffffffff, 0x76325410,
+};
+
+static const u32 liverpool_mgcg_cgcg_init[] =
+{
+	0x3108, 0xffffffff, 0xfffffffc,
+	0xc200, 0xffffffff, 0xe0000000,
+	0xf0a8, 0xffffffff, 0x00000100,
+	0xf082, 0xffffffff, 0x00000100,
+	0xf0b0, 0xffffffff, 0x00000100,
+	0xf0b2, 0xffffffff, 0x00000100,
+	0xf0b1, 0xffffffff, 0x00000100,
+	0x1579, 0xffffffff, 0x00600100,
+	0xf0a0, 0xffffffff, 0x00000100,
+	0xf085, 0xffffffff, 0x06000100,
+	0xf088, 0xffffffff, 0x00000100,
+	0xf086, 0xffffffff, 0x06000100,
+	0xf081, 0xffffffff, 0x00000100,
+	0xf0b8, 0xffffffff, 0x00000100,
+	0xf089, 0xffffffff, 0x00000100,
+	0xf080, 0xffffffff, 0x00000100,
+	0xf08c, 0xffffffff, 0x00000100,
+	0xf08d, 0xffffffff, 0x00000100,
+	0xf094, 0xffffffff, 0x00000100,
+	0xf095, 0xffffffff, 0x00000100,
+	0xf096, 0xffffffff, 0x00000100,
+	0xf097, 0xffffffff, 0x00000100,
+	0xf098, 0xffffffff, 0x00000100,
+	0xf09f, 0xffffffff, 0x00000100,
+	0xf09e, 0xffffffff, 0x00000100,
+	0xf084, 0xffffffff, 0x06000100,
+	0xf0a4, 0xffffffff, 0x00000100,
+	0xf09d, 0xffffffff, 0x00000100,
+	0xf0ad, 0xffffffff, 0x00000100,
+	0xf0ac, 0xffffffff, 0x00000100,
+	0xf09c, 0xffffffff, 0x00000100,
+	0xc200, 0xffffffff, 0xe0000000,
+	0xf008, 0xffffffff, 0x00010000,
+	0xf009, 0xffffffff, 0x00030002,
+	0xf00a, 0xffffffff, 0x00040007,
+	0xf00b, 0xffffffff, 0x00060005,
+	0xf00c, 0xffffffff, 0x00090008,
+	0xf00d, 0xffffffff, 0x00010000,
+	0xf00e, 0xffffffff, 0x00030002,
+	0xf00f, 0xffffffff, 0x00040007,
+	0xf010, 0xffffffff, 0x00060005,
+	0xf011, 0xffffffff, 0x00090008,
+	0xf012, 0xffffffff, 0x00010000,
+	0xf013, 0xffffffff, 0x00030002,
+	0xf014, 0xffffffff, 0x00040007,
+	0xf015, 0xffffffff, 0x00060005,
+	0xf016, 0xffffffff, 0x00090008,
+	0xf017, 0xffffffff, 0x00010000,
+	0xf018, 0xffffffff, 0x00030002,
+	0xf019, 0xffffffff, 0x00040007,
+	0xf01a, 0xffffffff, 0x00060005,
+	0xf01b, 0xffffffff, 0x00090008,
+	0xf01c, 0xffffffff, 0x00010000,
+	0xf01d, 0xffffffff, 0x00030002,
+	0xf01e, 0xffffffff, 0x00040007,
+	0xf01f, 0xffffffff, 0x00060005,
+	0xf020, 0xffffffff, 0x00090008,
+	0xf021, 0xffffffff, 0x00010000,
+	0xf022, 0xffffffff, 0x00030002,
+	0xf023, 0xffffffff, 0x00040007,
+	0xf024, 0xffffffff, 0x00060005,
+	0xf025, 0xffffffff, 0x00090008,
+	0xf026, 0xffffffff, 0x00010000,
+	0xf027, 0xffffffff, 0x00030002,
+	0xf028, 0xffffffff, 0x00040007,
+	0xf029, 0xffffffff, 0x00060005,
+	0xf02a, 0xffffffff, 0x00090008,
+	0xf02b, 0xffffffff, 0x00010000,
+	0xf02c, 0xffffffff, 0x00030002,
+	0xf02d, 0xffffffff, 0x00040007,
+	0xf02e, 0xffffffff, 0x00060005,
+	0xf02f, 0xffffffff, 0x00090008,
+	0xf030, 0xffffffff, 0x00010000,
+	0xf031, 0xffffffff, 0x00030002,
+	0xf032, 0xffffffff, 0x00040007,
+	0xf033, 0xffffffff, 0x00060005,
+	0xf034, 0xffffffff, 0x00090008,
+	0xf035, 0xffffffff, 0x00010000,
+	0xf036, 0xffffffff, 0x00030002,
+	0xf037, 0xffffffff, 0x00040007,
+	0xf038, 0xffffffff, 0x00060005,
+	0xf039, 0xffffffff, 0x00090008,
+	0xf000, 0xffffffff, 0x96940200,
+	0x21c2, 0xffffffff, 0x00900100,
+	0x3109, 0xffffffff, 0x0020003f,
+	0x1579, 0xff607fff, 0xfc000100,
+};
+
 static const u32 godavari_golden_registers[] =
 {
 	0x1579, 0xff607fff, 0xfc000100,
@@ -899,6 +1041,20 @@ static void cik_init_golden_registers(struct amdgpu_device *adev)
 		amdgpu_device_program_register_sequence(adev,
 							hawaii_golden_spm_registers,
 							ARRAY_SIZE(hawaii_golden_spm_registers));
+		break;
+	case CHIP_LIVERPOOL:
+		amdgpu_device_program_register_sequence(adev,
+						 liverpool_mgcg_cgcg_init,
+						 ARRAY_SIZE(liverpool_mgcg_cgcg_init));
+		amdgpu_device_program_register_sequence(adev,
+						 liverpool_golden_registers,
+						 ARRAY_SIZE(liverpool_golden_registers));
+		amdgpu_device_program_register_sequence(adev,
+						 liverpool_golden_common_registers,
+						 ARRAY_SIZE(liverpool_golden_common_registers));
+		amdgpu_device_program_register_sequence(adev,
+						 liverpool_golden_spm_registers,
+						 ARRAY_SIZE(liverpool_golden_spm_registers));
 		break;
 	default:
 		break;
@@ -2116,6 +2272,34 @@ static int cik_common_early_init(struct amdgpu_ip_block *ip_block)
 		} else
 			adev->external_rev_id = adev->rev_id + 0xa1;
 		break;
+	case CHIP_LIVERPOOL:
+		adev->cg_flags =
+			AMD_CG_SUPPORT_GFX_MGCG |
+			AMD_CG_SUPPORT_GFX_MGLS |
+			/*AMD_CG_SUPPORT_GFX_CGCG |*/
+			AMD_CG_SUPPORT_GFX_CGLS |
+			AMD_CG_SUPPORT_GFX_CGTS |
+			AMD_CG_SUPPORT_GFX_CGTS_LS |
+			AMD_CG_SUPPORT_GFX_CP_LS |
+			AMD_CG_SUPPORT_SDMA_MGCG |
+			AMD_CG_SUPPORT_SDMA_LS |
+			AMD_CG_SUPPORT_BIF_LS |
+			AMD_CG_SUPPORT_VCE_MGCG |
+			AMD_CG_SUPPORT_UVD_MGCG |
+			AMD_CG_SUPPORT_HDP_LS |
+			AMD_CG_SUPPORT_HDP_MGCG;
+		adev->pg_flags =
+			/*AMD_PG_SUPPORT_GFX_PG |
+			  AMD_PG_SUPPORT_GFX_SMG | */
+			/*AMD_PG_SUPPORT_UVD | */
+			/*AMD_PG_SUPPORT_VCE |
+			  AMD_PG_SUPPORT_CP |
+			  AMD_PG_SUPPORT_GDS |
+			  AMD_PG_SUPPORT_RLC_SMU_HS |
+			  AMD_PG_SUPPORT_SAMU |*/
+			0;
+		adev->external_rev_id = adev->rev_id + 0x61;
+		break;
 	default:
 		/* FIXME: not supported yet */
 		return -EINVAL;
@@ -2268,6 +2452,24 @@ int cik_set_ip_blocks(struct amdgpu_device *adev)
 #endif
 		else
 			amdgpu_device_ip_block_add(adev, &dce_v8_3_ip_block);
+		amdgpu_device_ip_block_add(adev, &uvd_v4_2_ip_block);
+		amdgpu_device_ip_block_add(adev, &vce_v2_0_ip_block);
+		break;
+	case CHIP_LIVERPOOL:
+		amdgpu_device_ip_block_add(adev, &cik_common_ip_block);
+		amdgpu_device_ip_block_add(adev, &gmc_v7_0_ip_block);
+		amdgpu_device_ip_block_add(adev, &cik_ih_ip_block);
+		amdgpu_device_ip_block_add(adev, &gfx_v7_1_ip_block);
+		amdgpu_device_ip_block_add(adev, &cik_sdma_ip_block);
+		amdgpu_device_ip_block_add(adev, &pp_smu_ip_block);
+		if (adev->enable_virtual_display)
+			amdgpu_device_ip_block_add(adev, &amdgpu_vkms_ip_block);
+#if defined(CONFIG_DRM_AMD_DC)
+		else if (amdgpu_device_has_dc_support(adev))
+			amdgpu_device_ip_block_add(adev, &dm_ip_block);
+#endif
+		else
+			amdgpu_device_ip_block_add(adev, &dce_v8_1_ip_block);
 		amdgpu_device_ip_block_add(adev, &uvd_v4_2_ip_block);
 		amdgpu_device_ip_block_add(adev, &vce_v2_0_ip_block);
 		break;

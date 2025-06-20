@@ -152,6 +152,7 @@ static int gmc_v7_0_init_microcode(struct amdgpu_device *adev)
 	case CHIP_KAVERI:
 	case CHIP_KABINI:
 	case CHIP_MULLINS:
+	case CHIP_LIVERPOOL:
 		return 0;
 	default:
 		return -EINVAL;
@@ -401,6 +402,9 @@ static int gmc_v7_0_mc_init(struct amdgpu_device *adev)
 			adev->gmc.gart_size = 256ULL << 20;
 			break;
 #ifdef CONFIG_DRM_AMDGPU_CIK
+		case CHIP_LIVERPOOL:
+			adev->gmc.gart_size = 512ULL << 20;
+			break;
 		case CHIP_BONAIRE: /* UVD, VCE do not support GPUVM */
 		case CHIP_HAWAII:  /* UVD, VCE do not support GPUVM */
 		case CHIP_KAVERI:  /* UVD, VCE do not support GPUVM */
