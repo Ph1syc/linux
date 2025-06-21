@@ -235,6 +235,9 @@ void msi_unlock_descs(struct device *dev);
 struct msi_desc *msi_domain_first_desc(struct device *dev, unsigned int domid,
 				       enum msi_desc_filter filter);
 
+struct msi_desc *msi_alloc_desc(struct device *dev, int nvec,
+				       const struct irq_affinity_desc *affinity);
+
 /**
  * msi_first_desc - Get the first MSI descriptor of the default irqdomain
  * @dev:	Device to operate on
