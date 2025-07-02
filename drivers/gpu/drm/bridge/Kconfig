@@ -221,6 +221,19 @@ config DRM_NXP_PTN3460
 	help
 	  NXP PTN3460 eDP-LVDS bridge chip driver.
 
+config DRM_PANASONIC_MN8647XX
+	tristate "Lontium LT8912B DSI/HDMI bridge"
+	depends on OF
+	select DRM_BRIDGE_CONNECTOR
+	select DRM_DISPLAY_HDMI_HELPER
+	select DRM_DISPLAY_HDMI_STATE_HELPER
+	select DRM_KMS_HELPER
+	select REGMAP_I2C
+	select VIDEOMODE_HELPERS
+	help
+	  Driver for Panasonic MN86471A / MN864729
+	  DP to HDMI bridge chip driver.
+
 config DRM_PARADE_PS8622
 	tristate "Parade eDP/LVDS bridge"
 	depends on OF
