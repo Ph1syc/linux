@@ -28,6 +28,7 @@
 #include <linux/i2c.h>
 #include <linux/i2c-algo-bit.h>
 #include <linux/pci.h>
+#include <linux/platform_device.h>
 
 #define CMD_READ	1, 1
 #define CMD_WRITE	2, 2
@@ -378,7 +379,7 @@ static void ps4_bridge_enable(struct drm_bridge *bridge,
 		return;
 	}
 
-	if(pdev->vendor != PCI_VENDOR_ID_ATI) {
+	if (pdev->vendor != (PCI_VENDOR_ID_ATI || PCI_VENDOR_ID_AMD)) {
 		dev_err(mn_bridge->dev, "Invalid vendor: %04x", pdev->vendor);
 		return;
 	}
@@ -693,7 +694,7 @@ static int ps4_bridge_attach(struct drm_bridge *bridge,
 	struct ps4_bridge *mn_bridge = bridge_to_ps4_bridge(bridge);
 
 	return drm_bridge_attach(bridge->encoder, mn_bridge->next_bridge,
-                             bridge, flags);
+                             NULL, DRM_BRIDGE_ATTACH_NO_CONNECTOR);
 }
 
 static struct drm_bridge_funcs ps4_bridge_funcs = {
@@ -706,6 +707,37 @@ static struct drm_bridge_funcs ps4_bridge_funcs = {
     .atomic_disable = ps4_bridge_disable,
     .atomic_post_disable = ps4_bridge_post_disable,
 };
+
+static int ps4_bridge_probe(struct platform_device *pdev) 
+{
+	struct ps4_bridge *mn_bridge;
+	struct device *dev = &pdev->dev;
+
+	if (!dev->of_node)
+		return -ENODEV;
+
+	mn_bridge = devm_kzalloc(&pdev->dev, sizeof(*mn_bridge), GFP_KERNEL);
+	if (!mn_bridge)
+		return -ENOMEM;
+
+	mn_bridge->dev = dev;
+
+	mn_bridge->bridge.funcs = &ps4_bridge_funcs;
+	mn_bridge->bridge.of_node = dev->of_node;
+	mn_bridge->bridge.type = DRM_MODE_CONNECTOR_HDMIA;
+
+	drm_bridge_add(&mn_bridge->bridge);
+
+	return 0;
+}
+
+static struct platform_driver ps4_bridge_driver = {
+	.probe = ps4_bridge_probe,
+	.driver = {
+		   .name = "ps4 bridge",
+	},
+};
+module_platform_driver(ps4_bridge_driver);
 
 MODULE_DESCRIPTION("Panasonic MN8647XX DP to HDMI bridge driver");
 MODULE_LICENSE("GPL v2");
