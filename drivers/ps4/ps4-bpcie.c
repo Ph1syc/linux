@@ -10,6 +10,7 @@
 #include <linux/msi.h>
 #include <asm/irqdomain.h>
 #include <asm/irq_remapping.h>
+#include <asm/apic.h>
 
 #include <asm/msi.h>
 
@@ -71,7 +72,7 @@ static void bpcie_msi_unmask(struct irq_data *data)
 	struct pci_dev *pdev = msi_desc_to_pci_dev(desc);
 	int msi_allocated = desc->nvec_used;
 	int msi_msgnum = pci_msi_vec_count(pdev);
-	u32 msi_mask = desc->masked; //(1LL << msi_msgnum) - 1;
+	u32 msi_mask = desc->pci.msi_mask; //(1LL << msi_msgnum) - 1;
 
 	/*
 	if ( msi_alloc > 0 )
@@ -107,9 +108,9 @@ static void bpcie_msi_unmask(struct irq_data *data)
 
 	dev_dbg(data->common->msi_desc->dev, "bpcie_msi_unmask(msi_mask=0x%X, msi_allocated=0x%X)\n", msi_mask, msi_allocated);
 	//msi_mask = 0;
-	pci_write_config_dword(pdev, desc->mask_pos,
+	pci_write_config_dword(pdev, desc->pci.mask_pos,
 			       msi_mask);
-	desc->masked = msi_mask;
+	desc->pci.msi_mask = msi_mask;
 
 	//this code equals msi_mask = 0;
 }
@@ -122,7 +123,7 @@ static void bpcie_msi_mask(struct irq_data *data)
 	u8 subfunc = get_subfunc(data->hwirq);
 	struct msi_desc *desc = irq_data_get_msi_desc(data);
 	struct pci_dev *pdev = msi_desc_to_pci_dev(desc);
-	u32 msi_mask = desc->masked;
+	u32 msi_mask = desc->pci.msi_mask;
 	u32 msi_allocated = desc->nvec_used; //pci_msi_vec_count(msi_desc_to_pci_dev(desc)); 32 for bpcie glue
 	
 	if ( msi_allocated > 0 )
@@ -160,9 +161,9 @@ static void bpcie_msi_mask(struct irq_data *data)
 	
 	dev_dbg(data->common->msi_desc->dev, "bpcie_msi_mask(msi_mask=0x%X, msi_allocated=0x%X)\n", msi_mask, msi_allocated);
 	//msi_mask = 0;
-	pci_write_config_dword(pdev, desc->mask_pos,
+	pci_write_config_dword(pdev, desc->pci.mask_pos,
 			       msi_mask);
-	desc->masked = msi_mask;
+	desc->pci.msi_mask = msi_mask;
 	//TODO: disable ht. See apcie_bpcie_msi_ht_disable_and_bpcie_set_msi_mask
 
 	//this code equals msi_mask = 0xFFFFFFFF;
@@ -197,7 +198,7 @@ static struct irq_chip bpcie_msi_controller = {
 	.irq_ack = irq_chip_ack_parent,
 	.irq_set_affinity = msi_domain_set_affinity,
 	.irq_retrigger = irq_chip_retrigger_hierarchy,
-	.irq_compose_msi_msg = irq_msi_compose_msg,
+	.irq_compose_msi_msg = x86_vector_msi_compose_msg,  // this seems kinda wrong
 	.irq_write_msi_msg = bpcie_msi_write_msg,
 	.flags = IRQCHIP_SKIP_SET_WAKE,
 };
@@ -205,7 +206,7 @@ static struct irq_chip bpcie_msi_controller = {
 static irq_hw_number_t bpcie_msi_get_hwirq(struct msi_domain_info *info,
 					  msi_alloc_info_t *arg)
 {
-	return arg->msi_hwirq;
+	return arg->hwirq;
 }
 
 static void bpcie_handle_edge_irq(struct irq_desc *desc)
@@ -308,32 +309,32 @@ static void bpcie_msi_domain_set_desc(msi_alloc_info_t *arg,
 				    struct msi_desc *desc)
 {
 	struct pci_dev *dev = msi_desc_to_pci_dev(desc);
-	arg->type = X86_IRQ_ALLOC_TYPE_MSI;
+	arg->type = X86_IRQ_ALLOC_TYPE_PCI_MSI;
 	//IRQs "come from" function 4 as far as the IOMMU/system see
 	unsigned int sc_devfn;
 	struct pci_dev *sc_dev;
 	sc_devfn = (dev->devfn & ~7) | BAIKAL_FUNC_ID_PCIE;
 	sc_dev = pci_get_slot(dev->bus, sc_devfn);
-	arg->msi_dev = sc_dev;
+	//arg->msi_dev = sc_dev; Not needed anymore I guess
 	pci_dev_put(sc_dev);
 	//Our hwirq number is (slot << 8) | (func << 5) plus subfunction.
 	// Subfunction is usually 0 and implicitly increments per hwirq,
 	//but can also be 0xff to indicate that this is a shared IRQ. 
-	arg->msi_hwirq = (PCI_SLOT(dev->devfn) << 8) | (PCI_FUNC(dev->devfn) << 5);
+	arg->hwirq = (PCI_SLOT(dev->devfn) << 8) | (PCI_FUNC(dev->devfn) << 5);
 
 	#ifndef QEMU_HACK_NO_IOMMU
-		arg->flags = X86_IRQ_ALLOC_CONTIGUOUS_VECTORS;
 		if (!(bpcie_msi_domain_info.flags & MSI_FLAG_MULTI_PCI_MSI)) {
 			//desk->nvec = desk->nvec_used = 1;
-			arg->msi_hwirq |= 0x1F; // Shared IRQ for all subfunctions
+			arg->hwirq |= 0x1F; // Shared IRQ for all subfunctions
 		}
 	#endif
 }
 
 struct irq_domain *bpcie_create_irq_domain(struct bpcie_dev *sc, struct pci_dev *pdev)//similar to native_setup_msi_irqs
 {
-	struct irq_domain *parent;
-	struct irq_alloc_info info;
+	struct irq_domain *domain, *parent;
+	struct fwnode_handle *fn;
+	struct irq_fwspec fwspec;
 
 	dev_dbg(&pdev->dev, "bpcie_create_irq_domain\n");
 	if (x86_vector_domain == NULL) {
@@ -343,25 +344,37 @@ struct irq_domain *bpcie_create_irq_domain(struct bpcie_dev *sc, struct pci_dev 
 
 	bpcie_msi_domain_info.chip_data = (void *)sc;
 
-	init_irq_alloc_info(&info, NULL);
-	info.type = X86_IRQ_ALLOC_TYPE_MSI;
-	info.msi_dev = pdev;
-	parent = irq_remapping_get_ir_irq_domain(&info);
-	if (parent == NULL) {
+	fn = irq_domain_alloc_named_id_fwnode(bpcie_msi_controller.name, pci_dev_id(sc->pdev));
+	if (!fn) {
+		return NULL;
+	}
+
+	sc_dbg("devid = %d\n", pci_dev_id(sc->pdev));
+
+	fwspec.fwnode = fn;
+	fwspec.param_count = 1;
+
+	// It should be correct to put the pci device id in here
+	fwspec.param[0] = pci_dev_id(sc->pdev);
+
+	parent = irq_find_matching_fwspec(&fwspec, DOMAIN_BUS_ANY);
+	if (!parent) {
+		sc_dbg("no parent \n");
 		parent = x86_vector_domain;
+	} else if (parent == x86_vector_domain) {
+		sc_dbg("no parent \n");
 	} else {
 		bpcie_msi_domain_info.flags |= MSI_FLAG_MULTI_PCI_MSI;
 		bpcie_msi_controller.name = "IR-Baikal-MSI";
 	}
 
-	struct irq_domain *d;
-	d = pci_msi_create_irq_domain(NULL, &bpcie_msi_domain_info, parent);
-	if (d != NULL)
-		dev_set_msi_domain(&pdev->dev, d);
-	else
-		dev_err(&pdev->dev, "bpcie: failed to create irq domain\n");
+	domain = msi_create_irq_domain(fn, &bpcie_msi_domain_info, parent);
+	if (!domain) {
+		irq_domain_free_fwnode(fn);
+		pr_warn("Failed to initialize Baikal-MSI irqdomain.\n");
+	}
 
-	return d;
+	return domain;
 }
 
 int bpcie_is_compatible_device(struct pci_dev *dev)

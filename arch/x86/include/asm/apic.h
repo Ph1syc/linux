@@ -337,6 +337,9 @@ struct apic_override {
 	int	(*wakeup_secondary_cpu_64)(u32 apicid, unsigned long start_eip);
 };
 
+void x86_vector_msi_compose_msg(struct irq_data *data,
+				       struct msi_msg *msg);
+
 /*
  * Pointer to the local APIC driver in use on this system (there's
  * always just one such driver in use - the kernel decides via an

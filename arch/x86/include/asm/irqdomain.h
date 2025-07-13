@@ -14,6 +14,8 @@ extern int x86_fwspec_is_ioapic(struct irq_fwspec *fwspec);
 extern int x86_fwspec_is_hpet(struct irq_fwspec *fwspec);
 extern int x86_fwspec_is_aeolia(struct irq_fwspec *fwspec);
 
+void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg *msg);
+
 extern struct irq_domain *x86_vector_domain;
 
 extern void init_irq_alloc_info(struct irq_alloc_info *info,

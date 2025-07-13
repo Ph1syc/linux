@@ -37,7 +37,7 @@ void pci_msi_teardown_msi_irqs(struct pci_dev *dev)
  * @irq_data:	Pointer to interrupt data of the MSI interrupt
  * @msg:	Pointer to the message
  */
-static void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg *msg)
+void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg *msg)
 {
 	struct msi_desc *desc = irq_data_get_msi_desc(irq_data);
 
@@ -49,6 +49,7 @@ static void pci_msi_domain_write_msg(struct irq_data *irq_data, struct msi_msg *
 		__pci_write_msi_msg(desc, msg);
 }
 
+// EXPORT_SYMBOL(pci_msi_domain_write_msg);
 /**
  * pci_msi_domain_calc_hwirq - Generate a unique ID for an MSI source
  * @desc:	Pointer to the MSI descriptor
