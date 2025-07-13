@@ -1123,6 +1123,7 @@ bool msi_match_device_irq_domain(struct device *dev, unsigned int domid,
 	return ret;
 }
 
+// threre was a baikal check here but the function was rewritten
 static int msi_domain_prepare_irqs(struct irq_domain *domain, struct device *dev,
 				   int nvec, msi_alloc_info_t *arg)
 {

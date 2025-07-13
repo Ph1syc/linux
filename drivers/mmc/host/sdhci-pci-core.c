@@ -356,7 +356,10 @@ static int aeolia_probe(struct sdhci_pci_chip *chip)
 
 static int aeolia_probe_slot(struct sdhci_pci_slot *slot)
 {
-	int err = apcie_assign_irqs(slot->chip->pdev, 1);
+	//add check for aeolia later
+	//int err = apcie_assign_irqs(slot->chip->pdev, 1);
+	int err = pci_alloc_irq_vectors(slot->chip->pdev, 1, INT_MAX,
+			PCI_IRQ_MSIX | PCI_IRQ_MSI);
 	if (err <= 0) {
 		dev_err(&slot->chip->pdev->dev, "failed to get IRQ: %d\n", err);
 		return -ENODEV;
@@ -2010,8 +2013,7 @@ static const struct pci_device_id pci_ids[] = {
 	#ifdef CONFIG_X86_PS4
 	SDHCI_PCI_DEVICE(SONY, AEOLIA_SDHCI, aeolia),
 	SDHCI_PCI_DEVICE(SONY, BELIZE_SDHCI, aeolia),
-	// TODO (ps4patches): What is this doing in comments?
-	//SDHCI_PCI_DEVICE(SONY, BAIKAL_SDHCI, aeolia),
+	SDHCI_PCI_DEVICE(SONY, BAIKAL_SDHCI, aeolia),
 	#endif
 	SDHCI_PCI_DEVICE(GLI, 9750, gl9750),
 	SDHCI_PCI_DEVICE(GLI, 9755, gl9755),

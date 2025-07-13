@@ -378,21 +378,22 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
 	}
 	pci_set_drvdata(dev, axhci);
 
-	axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
+	// axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
+	axhci->nr_irqs = retval = pci_alloc_irq_vectors(dev, NR_DEVICES, INT_MAX,
+			PCI_IRQ_MSIX | PCI_IRQ_MSI);
 	if (retval < 0) {
 		goto free_axhci;
 	}
 
-	if(dev->device != PCI_DEVICE_ID_SONY_BELIZE_XHCI) {
+	if(dev->device == PCI_DEVICE_ID_SONY_AEOLIA_XHCI) {
 		pci_set_master(dev);
 	}
 
-	if (dma_set_mask(&dev->dev, DMA_BIT_MASK(31)) ||
-		dma_set_mask_and_coherent(&dev->dev, DMA_BIT_MASK(31))) {
+	if (dma_set_mask_and_coherent(&dev->dev, DMA_BIT_MASK(31))) {
 		return -ENODEV;
 	}
 
-	if(dev->device == PCI_DEVICE_ID_SONY_BELIZE_XHCI) {
+	if(dev->device != PCI_DEVICE_ID_SONY_AEOLIA_XHCI) {
 		retval = ahci_init_one(dev);
 		dev_dbg(&dev->dev, "ahci_init_one returned %d", retval);
 		if (!bus_master) {
@@ -420,7 +421,7 @@ free_axhci:
 	devm_kfree(&dev->dev, axhci);
 
 	// TODO (ps4patches): Don't aeolia and baikal also need this?
-	if(dev->device == PCI_DEVICE_ID_SONY_BELIZE_XHCI) {
+	if(dev->device != PCI_DEVICE_ID_SONY_AEOLIA_XHCI) {
 		pci_set_drvdata(dev, NULL);
 	}
 disable_device:
@@ -439,7 +440,7 @@ static void xhci_aeolia_remove(struct pci_dev *dev)
 		if(dev->device != PCI_DEVICE_ID_SONY_AEOLIA_XHCI) {
 			if(idx != 1)
 				xhci_aeolia_remove_one(dev, idx);
-			else if (dev->device == PCI_DEVICE_ID_SONY_BELIZE_XHCI)
+			else
 				ahci_remove_one(dev);
 		}
 		else
@@ -448,8 +449,11 @@ static void xhci_aeolia_remove(struct pci_dev *dev)
 
 	apcie_free_irqs(dev->irq, axhci->nr_irqs);
 
-	// TODO (ps4patches): Belize, remove in ahci commit
-	kfree(axhci);
+	// TODO (ps4patches): Belize only maybe ? 
+	if(dev->device == PCI_DEVICE_ID_SONY_BELIZE_XHCI) {
+		kfree(axhci);
+	}
+	
 
 	pci_disable_device(dev);
 }
