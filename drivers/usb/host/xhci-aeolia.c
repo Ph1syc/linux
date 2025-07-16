@@ -140,7 +140,7 @@ static void xhci_aeolia_remove_one(struct pci_dev *dev, int index)
 	usb_put_hcd(xhci->shared_hcd);
 
 	// TODO (ps4patches): Does this really need to be disabled?
-	if(dev->device == PCI_DEVICE_ID_SONY_BELIZE_XHCI) {
+	if(dev->device != PCI_DEVICE_ID_SONY_AEOLIA_XHCI) {
 		iounmap(hcd->regs);
 	}
 	usb_put_hcd(hcd);
@@ -222,8 +222,32 @@ static int ahci_init_one(struct pci_dev *pdev)
 		ctlr = kzalloc(sizeof(*ctlr), GFP_KERNEL);
 		if (ctlr) {
 			ctlr->r_mem = r_mem;
-			ctlr->dev_id = 0; //or 0x90ca104d;
+			ctlr->dev_id = 0;
 			ctlr->trace_len = 6;
+
+			// ctlr->dev_id |= PCI_VENDOR_ID_SONY << 16
+			// ctlr->dev_id |= aeolia, belize or baikal pci id
+			// will be in this format: 0x90ca104d 
+			// with 0x90ca being belize ahci and 0x104d being sony vendor id
+
+			// ctlr->dev_id = 0;
+			// ctrl->dev_id |= PCI_VENDOR_ID_SONY << 16;
+			// switch (pdev->device) {
+			// 	case PCI_DEVICE_ID_SONY_AEOLIA_XHCI:
+			// 		ctrl->dev_id |= PCI_DEVICE_ID_SONY_AEOLIA_AHCI;
+			// 		break;
+			// 	case PCI_DEVICE_ID_SONY_BELIZE_XHCI:
+			// 		ctrl->dev_id |= PCI_DEVICE_ID_SONY_BELIZE_AHCI;
+			//		belize_sata_phy_init(&pdev->dev, ctlr);
+			// 		break;
+			// 	case PCI_DEVICE_ID_SONY_BAIKAL_XHCI:
+			// 		ctrl->dev_id |= PCI_DEVICE_ID_SONY_BAIKAL_AHCI;
+			//		baikal_sata_phy_init(&pdev->dev, ctlr);
+			// 		break;
+			// 	default:
+			// 		ctrl->dev_id = 0;
+			// }
+
 			bpcie_sata_phy_init(&pdev->dev, ctlr);
 			kfree(ctlr);
 		}
@@ -277,6 +301,7 @@ static int ahci_init_one(struct pci_dev *pdev)
 
 	host->private_data = hpriv;
 
+	// ???
 	{
 		int index = 1;
 		int irq = (axhci->nr_irqs > 1) ? (pdev->irq + index) : pdev->irq;
@@ -378,9 +403,14 @@ static int xhci_aeolia_probe(struct pci_dev *dev, const struct pci_device_id *id
 	}
 	pci_set_drvdata(dev, axhci);
 
-	// axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
-	axhci->nr_irqs = retval = pci_alloc_irq_vectors(dev, NR_DEVICES, INT_MAX,
+	if (dev->device == PCI_DEVICE_ID_SONY_BAIKAL_XHCI) {
+		axhci->nr_irqs = retval = pci_alloc_irq_vectors(dev, NR_DEVICES, INT_MAX,
 			PCI_IRQ_MSIX | PCI_IRQ_MSI);
+	}
+	else {
+		axhci->nr_irqs = retval = apcie_assign_irqs(dev, NR_DEVICES);
+	}
+
 	if (retval < 0) {
 		goto free_axhci;
 	}
@@ -454,7 +484,6 @@ static void xhci_aeolia_remove(struct pci_dev *dev)
 		kfree(axhci);
 	}
 	
-
 	pci_disable_device(dev);
 }
 

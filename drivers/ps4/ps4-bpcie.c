@@ -330,7 +330,7 @@ static void bpcie_msi_domain_set_desc(msi_alloc_info_t *arg,
 	#endif
 }
 
-struct irq_domain *bpcie_create_irq_domain(struct bpcie_dev *sc, struct pci_dev *pdev)//similar to native_setup_msi_irqs
+struct irq_domain *bpcie_create_irq_domain(struct bpcie_dev *sc, struct pci_dev *pdev)//similar to hpet_create_irq_domain
 {
 	struct irq_domain *domain, *parent;
 	struct fwnode_handle *fn;

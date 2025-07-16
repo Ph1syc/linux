@@ -356,10 +356,15 @@ static int aeolia_probe(struct sdhci_pci_chip *chip)
 
 static int aeolia_probe_slot(struct sdhci_pci_slot *slot)
 {
-	//add check for aeolia later
-	//int err = apcie_assign_irqs(slot->chip->pdev, 1);
-	int err = pci_alloc_irq_vectors(slot->chip->pdev, 1, INT_MAX,
+	int err;
+	
+	if (slot->chip->pdev->device == PCI_DEVICE_ID_SONY_BAIKAL_SDHCI) {
+		err = pci_alloc_irq_vectors(slot->chip->pdev, 1, INT_MAX,
 			PCI_IRQ_MSIX | PCI_IRQ_MSI);
+	} else {	
+		err = apcie_assign_irqs(slot->chip->pdev, 1);
+	}
+	
 	if (err <= 0) {
 		dev_err(&slot->chip->pdev->dev, "failed to get IRQ: %d\n", err);
 		return -ENODEV;
