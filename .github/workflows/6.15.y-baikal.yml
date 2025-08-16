@@ -1,4 +1,4 @@
-name: Build 6.1.y
+name: Build 6.15.y-baikal
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4
         with:
-          ref: ps4-linux-6.1.y
+          ref: ps4-linux-6.15.y-baikal
           submodules: recursive
 
       - name: Install dependencies
